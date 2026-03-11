@@ -27,6 +27,41 @@ const createScene = async function() {
     floorMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
     floor.material = floorMat;
 
+    /* Table
+    ---------------------------------------------------------------------------------------- */
+    const table = BABYLON.MeshBuilder.CreateBox("table", {
+        width: 1.5,
+        height: 0.1,
+        depth: 1
+    }, scene);
+    table.position.y = 1.5;
+    const tableMat = new BABYLON.StandardMaterial("tableMat");
+    tableMat.diffuseColor = new BABYLON.Color3(1, 0.6, 0);
+    table.material = tableMat;
+
+    const leg = BABYLON.MeshBuilder.CreateBox("leg", {
+        width: 0.1,
+        height: 1.5,
+        depth: 0.1
+    }, scene);
+    const legMat = new BABYLON.StandardMaterial("legMat");
+    legMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    leg.material = legMat;
+    leg.isVisible = false;
+
+    const corners = [
+        new BABYLON.Vector3(0.6, -0.75, 0.4),
+        new BABYLON.Vector3(-0.6, -0.75, 0.4),
+        new BABYLON.Vector3(0.6, -0.75, -0.4),
+        new BABYLON.Vector3(-0.6, -0.75, -0.4)
+    ];
+
+    for (let i = 0; i < 4; i++) {
+        let legInstance = leg.createInstance("legInstance" + i);
+        legInstance.parent = table;
+        legInstance.position = corners[i];
+    };
+
     /* Enable XR
     ---------------------------------------------------------------------------------------- */
     try {
@@ -51,6 +86,6 @@ createScene().then((sceneToRender) => {
 });
 
 // Adapt to screen resizing
-window.addEventListner("resize", function() {
+window.addEventListener("resize", function() {
     engine.resize();
 });
