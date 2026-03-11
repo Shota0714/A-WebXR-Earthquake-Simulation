@@ -60,7 +60,28 @@ const createScene = async function() {
         let legInstance = leg.createInstance("legInstance" + i);
         legInstance.parent = table;
         legInstance.position = corners[i];
-    };
+    }
+
+    /* Button
+    ---------------------------------------------------------------------------------------- */
+    const button = BABYLON.MeshBuilder.CreateCylinder("button", {
+        diameter: 0.6,
+        height: 0.2
+    }, scene);
+    button.position = new BABYLON.Vector3(0, 0, -4);
+    const buttonMat = new BABYLON.StandardMaterial("buttonMat", scene);
+    buttonMat.diffuseColor = new BABYLON.Color3(1, 0, 0);
+    button.material = buttonMat;
+
+    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
+        diameter: 0.4
+    }, scene);
+    sphere.parent = button;
+    sphere.position = new BABYLON.Vector3(0, 0.08, 0);
+
+    /* Trigger
+    ---------------------------------------------------------------------------------------- */
+
 
     /* Enable XR
     ---------------------------------------------------------------------------------------- */
