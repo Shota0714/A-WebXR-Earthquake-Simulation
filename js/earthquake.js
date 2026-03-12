@@ -64,24 +64,84 @@ const createScene = async function() {
 
     /* Button
     ---------------------------------------------------------------------------------------- */
-    const button = BABYLON.MeshBuilder.CreateCylinder("button", {
+    const cylinder = BABYLON.MeshBuilder.CreateCylinder("cylinder", {
         diameter: 0.6,
         height: 0.2
     }, scene);
-    button.position = new BABYLON.Vector3(0, 0, -4);
-    const buttonMat = new BABYLON.StandardMaterial("buttonMat", scene);
-    buttonMat.diffuseColor = new BABYLON.Color3(1, 0, 0);
-    button.material = buttonMat;
+    cylinder.position = new BABYLON.Vector3(0, 0, -4);
+    const cylinderMat = new BABYLON.StandardMaterial("cylinderMat", scene);
+    cylinderMat.diffuseColor = new BABYLON.Color3(1, 0, 0);
+    cylinder.material = cylinderMat;
 
-    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {
+    const button = BABYLON.MeshBuilder.CreateSphere("button", {
         diameter: 0.4
     }, scene);
-    sphere.parent = button;
-    sphere.position = new BABYLON.Vector3(0, 0.08, 0);
+    button.parent = cylinder;
+    button.position = new BABYLON.Vector3(0, 0.08, 0);
+
+    /* Earthquakes
+    ---------------------------------------------------------------------------------------- */
+    const earthquakes = [
+        {
+            intensity: 0.05,
+            speed: 2,
+            duration: 2000,
+            name: "Light"
+        },
+        {
+            intensity: 0.2,
+            speed: 5,
+            duration: 3000,
+            name: "Middle"
+        },
+        {
+            intensity: 0.5,
+            speed: 10,
+            duration: 1500,
+            name: "Heavy"
+        }
+    ];
 
     /* Trigger
     ---------------------------------------------------------------------------------------- */
+    let isShaking = false;
+    let active = null;
+    const originalPosition = table.position.clone();
 
+    // a random earthquake is triggered when the button is clicked
+    button.actionManager = new BABYLON.ActionManager(scene);
+    button.actionManager.registerAction(
+        new BABYLON.ExecuteCodeAction(
+            BABYLON.ActionManager.OnPickTrigger,
+            () => {
+                // check an earthquake is currently happening to avoid starting next earthquake at the same time
+                if (!isShaking) {
+                    const randomE = Math.floor(Math.random() * earthquakes.length);
+                    active = earthquakes[randomE];
+                    isShaking = true;
+                    console.log(active.name + " triggered");
+                    setTimeout(() => {
+                        isShaking = false;
+                    }, active.duration);
+                }
+            }
+        )
+    );
+
+    // get the position of the table constantly
+    scene.onBeforeRenderObservable.add(() => {
+        // update the position of the table
+        if (isShaking && active) {
+            const i = active.intensity;
+            table.position.x = originalPosition.x + (Math.random() - 0.5) * i;
+            table.position.z = originalPosition.z + (Math.random() - 0.5) * i;
+        }
+        // put the table back to original position
+        else {
+            table.position.x = originalPosition.x;
+            table.position.z = originalPosition.z;
+        }
+    });
 
     /* Enable XR
     ---------------------------------------------------------------------------------------- */
