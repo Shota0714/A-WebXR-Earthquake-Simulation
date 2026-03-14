@@ -17,15 +17,43 @@ const createScene = async function() {
     const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
     light.intensity = 0.8;
 
+    /* Ground
+    ---------------------------------------------------------------------------------------- */
+    const groundMat = new BABYLON.StandardMaterial("groundMat");
+    groundMat.diffuseTexture = new BABYLON.Texture("https://assets.babylonjs.com/textures/grass.png");
+    groundMat.specularColor = new BABYLON.Color3(0, 0, 0);
+    const ground = BABYLON.MeshBuilder.CreateGroundFromHeightMap("ground", "https://assets.babylonjs.com/environments/villageheightmap.png", {
+        width: 150,
+        height: 150,
+        subdivisions: 100,
+        minHeight: 0,
+        maxHeight: 10
+    });
+    ground.material = groundMat;
+    ground.receiveShadows = true;
+
+    /* Sky
+    ---------------------------------------------------------------------------------------- */
+    const sky = BABYLON.MeshBuilder.CreateBox("sky", {
+        size: 150
+    }, scene);
+    const skyMat = new BABYLON.StandardMaterial("skyMat", scene);
+    skyMat.backFaceCulling = false;
+    skyMat.reflectionTexture = new BABYLON.CubeTexture("./textures/skybox", scene);
+    skyMat.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+    skyMat.diffuseColor = new BABYLON.Color3(0, 0, 0);
+    skyMat.specularColor = new BABYLON.Color3(0, 0, 0);
+    sky.material = skyMat;
+
     /* Floor
     ---------------------------------------------------------------------------------------- */
-    const floor = BABYLON.MeshBuilder.CreateGround("floor", {
-        width: 10,
-        height: 10
-    }, scene);
-    const floorMat = new BABYLON.StandardMaterial("floorMat");
-    floorMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
-    floor.material = floorMat;
+    // const floor = BABYLON.MeshBuilder.CreateGround("floor", {
+    //     width: 10,
+    //     height: 10
+    // }, scene);
+    // const floorMat = new BABYLON.StandardMaterial("floorMat");
+    // floorMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3);
+    // floor.material = floorMat;
 
     /* Table
     ---------------------------------------------------------------------------------------- */
