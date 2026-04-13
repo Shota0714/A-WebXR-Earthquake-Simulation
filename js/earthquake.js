@@ -110,13 +110,69 @@ const createScene = async function() {
 
     // const tableAggregate = new BABYLON.PhysicsAggregate(table, BABYLON.PhysicsShapeType.BOX, { mass: 5, restitution: 0.6, friction: 0.5 }, scene);
 
+    /* House
+    ---------------------------------------------------------------------------------------- */
+    const faceUV = [];
+    faceUV[0] = new BABYLON.Vector4(0.4, 0.0, 0.6, 1.0);
+    faceUV[1] = new BABYLON.Vector4(0.3, 0.0, 0.5, 1.0);
+    faceUV[2] = new BABYLON.Vector4(0.6, 0.0, 1.0, 1.0);
+    faceUV[3] = new BABYLON.Vector4(0.0, 0.0, 0.4, 1.0);
+    
+    const boxMat = new BABYLON.StandardMaterial("boxMat", scene);
+    boxMat.diffuseTexture = new BABYLON.Texture("./textures/stoneso.png", scene);
+    const roofMat = new BABYLON.StandardMaterial("roofMat", scene);
+    roofMat.diffuseTexture = new BABYLON.Texture("./textures/wood.jpg", scene);
+
+    function buildHouse(position, rotationY) {
+        const box = BABYLON.MeshBuilder.CreateBox("box_" + position.x, { faceUV: faceUV, wrap: true }, scene);
+        box.scaling = new BABYLON.Vector3(2, 1.5, 3);
+        box.position = position.clone();
+        box.position.y = 0.75;
+        box.rotation.y = BABYLON.Tools.ToRadians(rotationY);
+        box.material = boxMat;
+        const boxAggregate = new BABYLON.PhysicsAggregate(box, BABYLON.PhysicsShapeType.BOX, { mass: 0, friction: 0.5, restitution: 0.1 }, scene);
+
+        const roof = BABYLON.MeshBuilder.CreateCylinder("roof_" + position.x, { diameter: 2.8, height: 3.5, tessellation: 3 }, scene);
+        roof.scaling.x = 0.75;
+        roof.rotation.z = BABYLON.Tools.ToRadians(90);
+        roof.rotation.y = BABYLON.Tools.ToRadians(rotationY - 90);
+        roof.position = position.clone();
+        roof.position.y = 2;
+        roof.material = roofMat;
+        const roofAggregate = new BABYLON.PhysicsAggregate(roof, BABYLON.PhysicsShapeType.CYLINDER, { mass: 0, friction: 0.8, restitution: 0.1 }, scene);
+
+        return [
+            { mesh: box, aggregate: boxAggregate },
+            { mesh: roof, aggregate: roofAggregate }
+        ];
+    }
+
+    const houseParts = [
+        ...buildHouse(new BABYLON.Vector3(1, 0, 10), 45),
+        ...buildHouse(new BABYLON.Vector3(0, 3, -4), 45),
+        ...buildHouse(new BABYLON.Vector3(-3, 0, 1), -45),
+    ]
+
+    let houseCollapsed = false;
+
+    function collapseHouse() {
+        if (houseCollapsed) return;
+        houseCollapsed = true;
+
+        houseParts.forEach(({ mesh, aggregate }) => {
+            aggregate.body.setMotionType(BABYLON.PhysicsMotionType.DYNAMIC);
+            aggregate.body.applyImpulse(new BABYLON.Vector3((Math.random() - 0.5) * 20, Math.random() * 20, (Math.random() - 0.5) * 20), mesh.getAbsolutePosition());
+            aggregate.body.applyAngularImpulse(new BABYLON.Vector3((Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10, (Math.random() - 0.5) * 10));
+        });
+    }
+
     /* Button
     ---------------------------------------------------------------------------------------- */
     const cylinder = BABYLON.MeshBuilder.CreateCylinder("cylinder", {
         diameter: 0.6,
         height: 0.2
     }, scene);
-    cylinder.position = new BABYLON.Vector3(0, 0, -4);
+    cylinder.position = new BABYLON.Vector3(5, 0, 0);
     const cylinderMat = new BABYLON.StandardMaterial("cylinderMat", scene);
     cylinderMat.diffuseColor = new BABYLON.Color3(1, 0, 0);
     cylinder.material = cylinderMat;
@@ -167,6 +223,9 @@ const createScene = async function() {
                     active = earthquakes[randomE];
                     isShaking = true;
                     console.log(active.name + " triggered");
+                    if (active.name === "Heavy") {
+                        collapseHouse();
+                    }
                     setTimeout(() => {
                         isShaking = false;
                     }, active.duration);
