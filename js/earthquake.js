@@ -6,6 +6,11 @@ const engine = new BABYLON.Engine(canvas, true);
 // create the scene
 const createScene = async function() {
     const scene = new BABYLON.Scene(engine);
+    
+    // enable physics
+    const havokInstance = await HavokPhysics();
+    const hk = new BABYLON.HavokPlugin(true, havokInstance);
+    scene.enablePhysics(new BABYLON.Vector3(0, -9.81, 0), hk);
 
     /* Camera
     ---------------------------------------------------------------------------------------- */
@@ -32,6 +37,16 @@ const createScene = async function() {
     ground.material = groundMat;
     ground.receiveShadows = true;
 
+    let groundAggregate;
+    await new Promise((resolve) => {
+        ground.onReady = () => {
+            groundAggregate = new BABYLON.PhysicsAggregate(ground, BABYLON.PhysicsShapeType.MESH, { mass: 0}, scene);
+            groundAggregate.body.setMotionType(BABYLON.PhysicsMotionType.ANIMATED);
+            groundAggregate.body.disablePreStep = false;
+            resolve();
+        };
+    });
+
     /* Sky
     ---------------------------------------------------------------------------------------- */
     const sky = BABYLON.MeshBuilder.CreateBox("sky", {
@@ -57,38 +72,43 @@ const createScene = async function() {
 
     /* Table
     ---------------------------------------------------------------------------------------- */
-    const table = BABYLON.MeshBuilder.CreateBox("table", {
-        width: 1.5,
-        height: 0.1,
-        depth: 1
-    }, scene);
-    table.position.y = 1.5;
-    const tableMat = new BABYLON.StandardMaterial("tableMat");
-    tableMat.diffuseColor = new BABYLON.Color3(1, 0.6, 0);
-    table.material = tableMat;
+    // const table = BABYLON.MeshBuilder.CreateBox("table", {
+    //     width: 1.5,
+    //     height: 0.1,
+    //     depth: 1
+    // }, scene);
+    // table.position.y = 1.5;
+    // const tableMat = new BABYLON.StandardMaterial("tableMat");
+    // tableMat.diffuseColor = new BABYLON.Color3(1, 0.6, 0);
+    // table.material = tableMat;
 
-    const leg = BABYLON.MeshBuilder.CreateBox("leg", {
-        width: 0.1,
-        height: 1.5,
-        depth: 0.1
-    }, scene);
-    const legMat = new BABYLON.StandardMaterial("legMat");
-    legMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-    leg.material = legMat;
-    leg.isVisible = false;
+    // const legRoot = new BABYLON.TransformNode("legRoot", scene);
+    // legRoot.parent = table;
 
-    const corners = [
-        new BABYLON.Vector3(0.6, -0.75, 0.4),
-        new BABYLON.Vector3(-0.6, -0.75, 0.4),
-        new BABYLON.Vector3(0.6, -0.75, -0.4),
-        new BABYLON.Vector3(-0.6, -0.75, -0.4)
-    ];
+    // const leg = BABYLON.MeshBuilder.CreateBox("leg", {
+    //     width: 0.1,
+    //     height: 1.5,
+    //     depth: 0.1
+    // }, scene);
+    // const legMat = new BABYLON.StandardMaterial("legMat");
+    // legMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    // leg.material = legMat;
+    // leg.isVisible = false;
 
-    for (let i = 0; i < 4; i++) {
-        let legInstance = leg.createInstance("legInstance" + i);
-        legInstance.parent = table;
-        legInstance.position = corners[i];
-    }
+    // const corners = [
+    //     new BABYLON.Vector3(0.6, -0.75, 0.4),
+    //     new BABYLON.Vector3(-0.6, -0.75, 0.4),
+    //     new BABYLON.Vector3(0.6, -0.75, -0.4),
+    //     new BABYLON.Vector3(-0.6, -0.75, -0.4)
+    // ];
+
+    // for (let i = 0; i < 4; i++) {
+    //     let legInstance = leg.createInstance("legInstance" + i);
+    //     legInstance.parent = legRoot;
+    //     legInstance.position = corners[i];
+    // }
+
+    // const tableAggregate = new BABYLON.PhysicsAggregate(table, BABYLON.PhysicsShapeType.BOX, { mass: 5, restitution: 0.6, friction: 0.5 }, scene);
 
     /* Button
     ---------------------------------------------------------------------------------------- */
@@ -134,7 +154,6 @@ const createScene = async function() {
     ---------------------------------------------------------------------------------------- */
     let isShaking = false;
     let active = null;
-    const originalPosition = table.position.clone();
 
     // a random earthquake is triggered when the button is clicked
     button.actionManager = new BABYLON.ActionManager(scene);
@@ -161,13 +180,13 @@ const createScene = async function() {
         // update the position of the table
         if (isShaking && active) {
             const i = active.intensity;
-            table.position.x = originalPosition.x + (Math.random() - 0.5) * i;
-            table.position.z = originalPosition.z + (Math.random() - 0.5) * i;
+            ground.position.x = (Math.random() - 0.5) * i;
+            ground.position.z = (Math.random() - 0.5) * i;
         }
         // put the table back to original position
         else {
-            table.position.x = originalPosition.x;
-            table.position.z = originalPosition.z;
+            ground.position.x = 0;
+            ground.position.z = 0;
         }
     });
 
