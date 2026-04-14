@@ -166,6 +166,49 @@ const createScene = async function() {
         });
     }
 
+    /* Building
+    ---------------------------------------------------------------------------------------- */
+    const buildingMat = new BABYLON.StandardMaterial("buildingMat", scene);
+    buildingMat.diffuseTexture = new BABYLON.Texture("./textures/checkerboard_metallicRoughness.png", scene);
+
+    function buildBuilding(position, floors = 5) {
+        const parts = [];
+        const floorWidth = 2;
+        const floorDepth = 2;
+        const floorHeight = 1;
+
+        for (let i = 0; i < floors; i++) {
+            const floor = BABYLON.MeshBuilder.CreateBox("floor_" + i + "_" + position.x, { width: floorWidth, height: floorHeight, depth: floorDepth }, scene);
+            floor.position = new BABYLON.Vector3(position.x, position.y + floorHeight * i + floorHeight / 2, position.z);
+
+            const floorMat = new BABYLON.StandardMaterial("floorMat_" + i, scene);
+            const shade = 0.4 + (i % 2) * 0.15;
+            floorMat.diffuseColor = new BABYLON.Color3(shade, shade + 0.1, shade + 0.2);
+            floor.material = floorMat;
+
+            const floorAggregate = new BABYLON.PhysicsAggregate(floor, BABYLON.PhysicsShapeType.BOX, { mass: 0, friction: 0.5, restitution: 0.1 }, scene);
+            parts.push({ mesh: floor, aggregate: floorAggregate });
+        }
+        return parts;
+    }
+
+    const buildingParts = buildBuilding(new BABYLON.Vector3(6, 0, 6), 8);
+    let buildingCollapsed = false;
+
+    function collapseBuilding() {
+        if (buildingCollapsed) return;
+        buildingCollapsed = true;
+
+        buildingParts.forEach(({ mesh, aggregate }, index) => {
+            setTimeout(() => {
+                aggregate.body.setMotionType(BABYLON.PhysicsMotionType.DYNAMIC);
+                const factor = (index + 1) * 0.5;
+                aggregate.body.applyImpulse(new BABYLON.Vector3((Math.random() - 0.5) * 10 * factor, Math.random() * 10 * factor, (Math.random() - 0.5) * 20 * factor), mesh.getAbsolutePosition());
+                aggregate.body.applyAngularImpulse(new BABYLON.Vector3((Math.random() - 0.5) * 10 * factor, (Math.random() - 0.5) * 10 * factor, (Math.random() - 0.5) * 10 * factor));
+            }, index * 80);
+        })
+    }
+
     /* Button
     ---------------------------------------------------------------------------------------- */
     const cylinder = BABYLON.MeshBuilder.CreateCylinder("cylinder", {
@@ -225,6 +268,10 @@ const createScene = async function() {
                     console.log(active.name + " triggered");
                     if (active.name === "Heavy") {
                         collapseHouse();
+                        collapseBuilding();
+                    }
+                    if (active.name === "Middle") {
+                        collapseBuilding();
                     }
                     setTimeout(() => {
                         isShaking = false;
