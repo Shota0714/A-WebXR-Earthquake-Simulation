@@ -215,7 +215,7 @@ const createScene = async function() {
         diameter: 0.6,
         height: 0.2
     }, scene);
-    cylinder.position = new BABYLON.Vector3(5, 0, 0);
+    cylinder.position = new BABYLON.Vector3(0, 0, -9);
     const cylinderMat = new BABYLON.StandardMaterial("cylinderMat", scene);
     cylinderMat.diffuseColor = new BABYLON.Color3(1, 0, 0);
     cylinder.material = cylinderMat;
