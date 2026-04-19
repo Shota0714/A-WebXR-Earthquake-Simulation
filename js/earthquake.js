@@ -186,27 +186,58 @@ const createScene = async function() {
             floorMat.diffuseColor = new BABYLON.Color3(shade, shade + 0.1, shade + 0.2);
             floor.material = floorMat;
 
-            const floorAggregate = new BABYLON.PhysicsAggregate(floor, BABYLON.PhysicsShapeType.BOX, { mass: 0, friction: 0.5, restitution: 0.1 }, scene);
+            // create physics aggregate for each floor and set it to static initially
+            const floorAggregate = new BABYLON.PhysicsAggregate(floor, BABYLON.PhysicsShapeType.BOX, { mass: 2.5, friction: 0.55, restitution: 0.12 }, scene);
+            floorAggregate.body.setMotionType(BABYLON.PhysicsMotionType.STATIC);
             parts.push({ mesh: floor, aggregate: floorAggregate });
         }
         return parts;
     }
 
-    const buildingParts = buildBuilding(new BABYLON.Vector3(6, 0, 6), 8);
+    // raycast to find the terrain height at the building position to place it on the ground
+    const buildingXZ = new BABYLON.Vector3(6, 0, 6);
+    const terrainRay = new BABYLON.Ray(new BABYLON.Vector3(buildingXZ.x, 80, buildingXZ.z), new BABYLON.Vector3(0, -1, 0), 200);
+    const terrainHit = scene.pickWithRay(terrainRay, (m) => m === ground);
+    const terrainY = terrainHit && terrainHit.hit && terrainHit.pickedPoint ? terrainHit.pickedPoint.y : 0;
+    const buildingParts = buildBuilding(new BABYLON.Vector3(buildingXZ.x, terrainY, buildingXZ.z), 8);
+
     let buildingCollapsed = false;
 
     function collapseBuilding() {
         if (buildingCollapsed) return;
         buildingCollapsed = true;
 
+        const n = buildingParts.length;
         buildingParts.forEach(({ mesh, aggregate }, index) => {
             setTimeout(() => {
-                aggregate.body.setMotionType(BABYLON.PhysicsMotionType.DYNAMIC);
-                const factor = (index + 1) * 0.5;
-                aggregate.body.applyImpulse(new BABYLON.Vector3((Math.random() - 0.5) * 10 * factor, Math.random() * 10 * factor, (Math.random() - 0.5) * 20 * factor), mesh.getAbsolutePosition());
-                aggregate.body.applyAngularImpulse(new BABYLON.Vector3((Math.random() - 0.5) * 10 * factor, (Math.random() - 0.5) * 10 * factor, (Math.random() - 0.5) * 10 * factor));
-            }, index * 80);
-        })
+                // set each floor to dynamic with a delay to create a collapse effect
+                const body = aggregate.body;
+                body.setMotionType(BABYLON.PhysicsMotionType.DYNAMIC);
+                body.setGravityFactor(1);
+                body.setMassProperties({ mass: 2.5 + index * 0.2 });
+                body.setLinearDamping(0.08);
+                body.setAngularDamping(0.12);
+
+                // get the world position of the floor
+                mesh.computeWorldMatrix(true);
+                const worldPos = mesh.getAbsolutePosition();
+
+                // apply an impulse to each floor
+                const heightBias = (index + 1) / n;
+                const lateral = 18 + heightBias * 22;
+                const impulse = new BABYLON.Vector3(
+                    (Math.random() - 0.5) * lateral,
+                    -10 - Math.random() * 12,
+                    (Math.random() - 0.5) * lateral
+                );
+                body.applyImpulse(impulse, worldPos);
+                body.applyAngularImpulse(new BABYLON.Vector3(
+                    (Math.random() - 0.5) * 24,
+                    (Math.random() - 0.5) * 18,
+                    (Math.random() - 0.5) * 24
+                ));
+            }, index * 28);
+        });
     }
 
     /* Button
